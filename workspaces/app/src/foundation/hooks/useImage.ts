@@ -2,13 +2,27 @@ import { useAsync } from 'react-use';
 
 import { getImageUrl } from '../../lib/image/getImageUrl';
 
+// ブラウザがWebPをサポートしているか確認
+const supportsWebP = (() => {
+  try {
+    return document.createElement('canvas')
+      .toDataURL('image/webp')
+      .indexOf('data:image/webp') === 0;
+  } catch (e) {
+    return false;
+  }
+})();
+
 export const useImage = ({ height, imageId, width }: { height: number; imageId: string; width: number }) => {
   const { value } = useAsync(async () => {
     const dpr = window.devicePixelRatio;
 
+    // WebPをサポートしていればWebP、そうでなければJPGを使用
+    const format = supportsWebP ? 'webp' : 'jpg';
+
     const img = new Image();
     img.src = getImageUrl({
-      format: 'jpg',
+      format,
       height: height * dpr,
       imageId,
       width: width * dpr,
@@ -39,7 +53,8 @@ export const useImage = ({ height, imageId, width }: { height: number; imageId: 
       ctx.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, width * dpr, height * dpr);
     }
 
-    return canvas.toDataURL('image/png');
+    // WebPをサポートしていればWebP、そうでなければPNGを使用
+    return canvas.toDataURL(supportsWebP ? 'image/webp' : 'image/png', 0.8);
   }, [height, imageId, width]);
 
   return value;

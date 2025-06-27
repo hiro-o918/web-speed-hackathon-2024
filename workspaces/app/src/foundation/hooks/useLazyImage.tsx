@@ -3,6 +3,17 @@ import React, { useState, useEffect, useRef } from 'react';
 import { getImageUrl } from '../../lib/image/getImageUrl';
 import { useIntersectionObserver } from './useIntersectionObserver';
 
+// ブラウザがWebPをサポートしているか確認
+const supportsWebP = (() => {
+  try {
+    return document.createElement('canvas')
+      .toDataURL('image/webp')
+      .indexOf('data:image/webp') === 0;
+  } catch (e) {
+    return false;
+  }
+})();
+
 type Props = {
   height: number;
   imageId: string;
@@ -26,9 +37,12 @@ export const useLazyImage = ({ height, imageId, width, eager = false }: Props) =
       const processImage = async () => {
         const dpr = window.devicePixelRatio;
 
+        // WebPをサポートしていればWebP、そうでなければJPGを使用
+        const format = supportsWebP ? 'webp' : 'jpg';
+
         const img = new Image();
         img.src = getImageUrl({
-          format: 'jpg',
+          format,
           height: height * dpr,
           imageId,
           width: width * dpr,
@@ -59,7 +73,8 @@ export const useLazyImage = ({ height, imageId, width, eager = false }: Props) =
           ctx.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, width * dpr, height * dpr);
         }
 
-        setImageUrl(canvas.toDataURL('image/png'));
+        // WebPをサポートしていればWebP、そうでなければPNGを使用
+        setImageUrl(canvas.toDataURL(supportsWebP ? 'image/webp' : 'image/png', 0.8));
       };
 
       processImage();
